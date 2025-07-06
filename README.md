@@ -1,3 +1,8 @@
+# Note
+
+環境変数 R53 の内容が想定した内容になっていなかったため、awsコマンドを直書きして対応した。
+
+
 # About
 
 'aws-r53' is an AWS Route53 manipulation helper script.

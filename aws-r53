@@ -17,7 +17,7 @@ RC_FILES=(${HOME}/.aws-r53rc /etc/aws-r53.conf /etc/aws-r53rc)
 JQ=jq
 JQ_PATH=(/bin/jq /usr/bin/jq /usr/local/bin/jq)
 AWS=aws
-AWS_PATH_CANDIDATE=(/bin/aws /usr/bin/aws /usr/local/bin/aws)
+AWS_PATH_CANDIDATE=(/bin/aws /usr/bin/aws /usr/local/bin/aws /snap/bin/aws)
 
 R53_ENV=()
 
@@ -201,7 +201,8 @@ _get_value() {
   __syslog "[get] ZoneID:$ZONE_ID"
   T_RESULT=`mktemp -p /dev/shm`
   T_ERROR=`mktemp -p /dev/shm`
-  $R53 list-resource-record-sets --hosted-zone-id="$ZONE_ID" > $T_RESULT 2> $T_ERROR
+  #$R53 list-resource-record-sets --hosted-zone-id="$ZONE_ID" > $T_RESULT 2> $T_ERROR
+  aws route53 list-resource-record-sets --hosted-zone-id="$ZONE_ID" > $T_RESULT 2> $T_ERROR
   if [[ $? -eq 0 ]]; then
     if [[ ! "$VERBOSE" ]]; then
       [[ "$TYPE" ]] || __error_end "Type should be specified." 
@@ -236,7 +237,8 @@ _update() {
 
   (echo -n "[update] ZoneID:$ZONE_ID "; cat $T_BATCH | jq -Mc .) | __syslog
   if [[ ! "$DRY_RUN" ]]; then
-    $R53 change-resource-record-sets --hosted-zone-id="$ZONE_ID" --change-batch file://$T_BATCH > $T_RESULT 2> $T_ERROR
+    #$R53 change-resource-record-sets --hosted-zone-id="$ZONE_ID" --change-batch file://$T_BATCH > $T_RESULT 2> $T_ERROR
+    aws route53 change-resource-record-sets --hosted-zone-id="$ZONE_ID" --change-batch file://$T_BATCH > $T_RESULT 2> $T_ERROR
     if [[ $? -eq 0 ]]; then
       CHANGE_INFO_ID=`cat $T_RESULT | jq -Mrc '.ChangeInfo.Id'`
       __syslog "[update] request succeeded. ChangeInfoID:$CHANGE_INFO_ID"
@@ -279,7 +281,8 @@ _wait_for() {
   while :; do
     sleep 10
     __syslog "[update] Waiting for $CHANGE_INFO_ID"
-    $R53 get-change --id "$ID" > $T_RESULT
+    #$R53 get-change --id "$ID" > $T_RESULT
+    aws route53 get-change --id "$ID" > $T_RESULT
     if [[ $? -eq 0 ]]; then
       local STATUS=`cat $T_RESULT | jq -r '.ChangeInfo.Status'`
       if [[ $STATUS == 'INSYNC' ]]; then
